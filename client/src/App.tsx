@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
 import { AlertTriangle, Bot, BrainCircuit, Check, ChevronRight, Circle, FileText, Gavel, LoaderCircle, MessageSquareText, Play, ShieldCheck, Sparkles, Upload, Users } from 'lucide-react'
 
@@ -49,9 +49,17 @@ function App() {
   const [debate, setDebate] = useState<DebateExchange[]>([])
   const [decision, setDecision] = useState<Decision>()
   const [error, setError] = useState('')
+  const [modelReady, setModelReady] = useState<boolean | null>(null)
   const ready = Boolean(files.job && files.resume && files.transcript)
   const completedAgents = Object.keys(opinions).length
   const progress = useMemo(() => status === 'completed' ? 100 : decision ? 95 : debate.length ? 78 : completedAgents ? 25 + completedAgents * 11 : profile ? 25 : status === 'running' ? 10 : 0, [status, decision, debate.length, completedAgents, profile])
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/health`)
+      .then((response) => response.json())
+      .then((health) => setModelReady(Boolean(health.model_available)))
+      .catch(() => setModelReady(false))
+  }, [])
 
   function resetRun() { setProfile(undefined); setOpinions({}); setDebate([]); setDecision(undefined); setError(''); setAgentStates({ technical: 'waiting', hr_culture: 'waiting', hiring_manager: 'waiting', skeptic: 'waiting' }) }
   function applyEvent(event: any) {
@@ -80,7 +88,7 @@ function App() {
 
   return <div className="min-h-screen bg-[#071019] text-slate-100 selection:bg-cyan-400/20">
     <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_15%_10%,rgba(34,211,238,.08),transparent_28%),radial-gradient(circle_at_85%_5%,rgba(139,92,246,.08),transparent_24%)]" />
-    <header className="relative border-b border-white/[0.07] bg-[#071019]/80 backdrop-blur-xl"><div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 lg:px-8"><div className="flex items-center gap-3"><div className="grid size-9 place-items-center rounded-xl bg-gradient-to-br from-cyan-300 to-blue-500 text-slate-950"><Sparkles size={18} /></div><div><div className="font-semibold tracking-tight">PanelAI</div><div className="text-[10px] uppercase tracking-[.22em] text-slate-500">Evidence-led hiring</div></div></div><div className="flex items-center gap-2 rounded-full border border-emerald-400/15 bg-emerald-400/[0.06] px-3 py-1.5 text-xs text-emerald-300"><span className="size-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" /> Local · Llama 3.1 8B</div></div></header>
+    <header className="relative border-b border-white/[0.07] bg-[#071019]/80 backdrop-blur-xl"><div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 lg:px-8"><div className="flex items-center gap-3"><div className="grid size-9 place-items-center rounded-xl bg-gradient-to-br from-cyan-300 to-blue-500 text-slate-950"><Sparkles size={18} /></div><div><div className="font-semibold tracking-tight">PanelAI</div><div className="text-[10px] uppercase tracking-[.22em] text-slate-500">Evidence-led hiring</div></div></div><div className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs ${modelReady ? 'border-emerald-400/15 bg-emerald-400/[0.06] text-emerald-300' : 'border-amber-400/15 bg-amber-400/[0.06] text-amber-300'}`}><span className={`size-1.5 rounded-full ${modelReady ? 'bg-emerald-400 shadow-[0_0_8px_#34d399]' : 'bg-amber-400'}`} /> {modelReady === null ? 'Checking local model…' : modelReady ? 'Local · Llama 3.1 8B ready' : 'Llama 3.1 8B not downloaded'}</div></div></header>
     <main className="relative mx-auto grid max-w-7xl gap-6 px-5 py-8 lg:grid-cols-[340px_1fr] lg:px-8">
       <aside><div className="sticky top-6 rounded-3xl border border-white/10 bg-[#0b1621]/90 p-5 shadow-2xl shadow-black/20"><div className="mb-6"><p className="text-xs font-medium uppercase tracking-[.2em] text-cyan-400">New evaluation</p><h1 className="mt-2 text-2xl font-semibold tracking-tight text-white">Build your interview panel</h1><p className="mt-2 text-sm leading-6 text-slate-500">Three documents become one traceable, debated recommendation.</p></div><form onSubmit={submit} className="space-y-3"><FilePicker label="Job description" value={files.job} onChange={(job) => setFiles((old) => ({ ...old, job }))} /><FilePicker label="Candidate résumé" value={files.resume} onChange={(resume) => setFiles((old) => ({ ...old, resume }))} /><FilePicker label="Interview transcript" value={files.transcript} onChange={(transcript) => setFiles((old) => ({ ...old, transcript }))} /><button disabled={!ready || status === 'running' || status === 'uploading'} className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-300 to-blue-500 px-4 py-3.5 text-sm font-semibold text-slate-950 shadow-lg shadow-cyan-500/10 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-35">{status === 'running' || status === 'uploading' ? <LoaderCircle className="animate-spin" size={17} /> : <Play size={16} fill="currentColor" />} Run panel evaluation</button></form><div className="mt-6 border-t border-white/[0.07] pt-5"><div className="flex items-center justify-between text-xs"><span className="text-slate-500">Pipeline progress</span><span className="font-mono text-cyan-300">{progress}%</span></div><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.06]"><div className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-blue-500 transition-all duration-700" style={{ width: `${progress}%` }} /></div><p className="mt-3 text-xs leading-5 text-slate-500">{stage}</p></div></div></aside>
       <section className="space-y-6">
