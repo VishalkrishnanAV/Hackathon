@@ -16,3 +16,10 @@ def test_blank_pdf_is_rejected():
     except ValueError as exc:
         assert "No readable text" in str(exc)
 
+
+def test_non_pdf_is_rejected_before_parsing():
+    try:
+        extract_evidence(b"not a pdf", "resume", "CV")
+        assert False, "Expected invalid PDF rejection"
+    except ValueError as exc:
+        assert "not a valid PDF" in str(exc)

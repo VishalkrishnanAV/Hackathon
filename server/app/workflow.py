@@ -4,6 +4,8 @@ from operator import or_
 from typing import Annotated, TypedDict
 
 from langchain_ollama import ChatOllama
+from langchain_groq import ChatGroq
+from langchain_core.language_models import BaseChatModel
 from langgraph.graph import END, START, StateGraph
 
 from app.config import settings
@@ -30,7 +32,15 @@ AGENT_GUIDANCE = {
 }
 
 
-def _llm() -> ChatOllama:
+def _llm() -> BaseChatModel:
+    if settings.llm_provider.lower() == "groq":
+        if not settings.groq_api_key:
+            raise RuntimeError("GROQ_API_KEY is required when LLM_PROVIDER=groq")
+        return ChatGroq(
+            model=settings.groq_model,
+            api_key=settings.groq_api_key,
+            temperature=0,
+        )
     return ChatOllama(
         model=settings.ollama_model,
         base_url=settings.ollama_base_url,
@@ -97,6 +107,7 @@ async def debate(state: PanelState) -> dict:
     prompt = f"""
 Moderate a genuine evidence-based debate among four interview agents.
 Create at least two exchanges. Every exchange must directly respond to a named different agent and cite valid evidence IDs.
+At least one speaker must genuinely revise its recommendation or confidence after considering another agent's evidence; set changed=true and preserve exact before/after values.
 Record the speaker's exact initial recommendation/confidence and revised values. A speaker may remain unchanged, but explain why.
 Preserve meaningful unresolved disagreements. Do not average scores.
 
@@ -146,4 +157,3 @@ panel_graph = builder.compile()
 
 async def run_panel(evidence: list[Evidence], emit: ProgressSink) -> PanelState:
     return await panel_graph.ainvoke({"evidence": evidence, "opinions": {}, "emit": emit})
-

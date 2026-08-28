@@ -79,3 +79,11 @@ npm run lint
 
 Evaluation state is intentionally in memory for the hackathon MVP. Restarting the FastAPI process clears existing runs.
 
+## Deploy on Render
+
+The repository includes `render.yaml`, which creates a FastAPI web service and React static site. Render uses Groq-hosted Llama in production while local development continues to use Ollama.
+
+1. Push the repository to GitHub.
+2. In Render, create a new Blueprint from this repository.
+3. Set the private `GROQ_API_KEY` value when prompted.
+4. Deploy both services.

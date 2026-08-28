@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: panelai-api
+    runtime: python
+    rootDir: server
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: LLM_PROVIDER
+        value: groq
+      - key: GROQ_MODEL
+        value: llama-3.1-8b-instant
+      - key: GROQ_API_KEY
+        sync: false
+
+  - type: web
+    name: panelai-client
+    runtime: static
+    rootDir: client
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_HOST
+        fromService:
+          type: web
+          name: panelai-api
+          property: host
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

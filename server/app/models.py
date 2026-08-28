@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 AgentName = Literal["technical", "hr_culture", "hiring_manager", "skeptic"]
@@ -50,8 +50,14 @@ class DebateExchange(BaseModel):
 
 
 class DebateResult(BaseModel):
-    exchanges: list[DebateExchange]
+    exchanges: list[DebateExchange] = Field(min_length=2)
     unresolved_disagreements: list[str]
+
+    @model_validator(mode="after")
+    def require_visible_opinion_change(self):
+        if not any(exchange.changed for exchange in self.exchanges):
+            raise ValueError("Debate must include at least one evidence-driven opinion change")
+        return self
 
 
 class FinalDecision(BaseModel):
@@ -74,4 +80,3 @@ class EvaluationResult(BaseModel):
     debate: DebateResult | None = None
     decision: FinalDecision | None = None
     error: str | None = None
-
