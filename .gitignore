@@ -1,0 +1,12 @@
+.npm-cache/
+client/node_modules/
+client/dist/
+server/.venv/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+.env
+backend/.venv/
+backend/.env
+sample_data/*.pdf
+
